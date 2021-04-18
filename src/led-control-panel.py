@@ -6,49 +6,74 @@
 import sys
 import time
 import RPi.GPIO as GPIO
-from PySide6 import QtCore, QtWidgets, QtGui
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QRadioButton, QVBoxLayout
+from PyQt5.QtCore import pyqtSlot
 
 RED_PHYS_PIN   = 11
 GREEN_PHYS_PIN = 13
 BLUE_PHYS_PIN  = 15
 
-class LedControlPanel(QtWidgets.QWidget):
+class App(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.title = "LED Control Panel"
+        self.left = 0
+        self.top = 0
+        self.width = 500
+        self.height = 500
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+
+        self.control_panel_widget = LedControlPanel(self)
+        self.setCentralWidget(self.control_panel_widget)
+
+        self.show()
+
+    def closeEvent(self, event):
+        GPIO.output(RED_PHYS_PIN, GPIO.LOW)
+        GPIO.output(GREEN_PHYS_PIN, GPIO.LOW)
+        GPIO.output(BLUE_PHYS_PIN, GPIO.LOW)
+        event.accept()
+        return
+
+class LedControlPanel(QWidget):
+    def __init__(self, parent):
+        super(QWidget, self).__init__(parent)
+        self.layout = QVBoxLayout(self)
+
         # Establishing the QtWidgets
-        self.DescriptionText = QtWidgets.QLabel("Welcome to the LED Control Panel!\n" +
+        self.DescriptionText = QLabel("Welcome to the LED Control Panel!\n" +
                 "Simply press the radio button corresponding with the colour of the LED\n" +
-                "you want to turn on. It'll turn it on and turn off all the others.",
-                alignment=QtCore.Qt.AlignHCenter)
-        self.RedButton = QtWidgets.QRadioButton("Red")
-        self.GreenButton = QtWidgets.QRadioButton("Green")
-        self.BlueButton = QtWidgets.QRadioButton("Blue")
+                "you want to turn on. It'll turn it on and turn off all the others.",)
+        self.RedButton = QRadioButton("Red")
+        self.GreenButton = QRadioButton("Green")
+        self.BlueButton = QRadioButton("Blue")
 
         # Adding the QtWidgets to layout (showing them)
-        self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addWidget(self.DescriptionText)
-        self.layout.addWidget(self.RedButton, alignment=QtCore.Qt.AlignCenter)
-        self.layout.addWidget(self.GreenButton, alignment=QtCore.Qt.AlignCenter)
-        self.layout.addWidget(self.BlueButton, alignment=QtCore.Qt.AlignCenter)
-        
+        self.layout.addWidget(self.RedButton)
+        self.layout.addWidget(self.GreenButton)
+        self.layout.addWidget(self.BlueButton)
+
         # Event hooks
         self.RedButton.clicked.connect(self.RedEvent)
         self.GreenButton.clicked.connect(self.GreenEvent)
         self.BlueButton.clicked.connect(self.BlueEvent)
-    
+
+    @pyqtSlot()
     def RedEvent(self):
         GPIO.output(RED_PHYS_PIN, GPIO.HIGH)
         GPIO.output(GREEN_PHYS_PIN, GPIO.LOW)
         GPIO.output(BLUE_PHYS_PIN, GPIO.LOW)
         return
-    
+
     def GreenEvent(self):
         GPIO.output(GREEN_PHYS_PIN, GPIO.HIGH)
         GPIO.output(RED_PHYS_PIN, GPIO.LOW)
         GPIO.output(BLUE_PHYS_PIN, GPIO.LOW)
         return
-    
+
     def BlueEvent(self):
         GPIO.output(BLUE_PHYS_PIN, GPIO.HIGH)
         GPIO.output(RED_PHYS_PIN, GPIO.LOW)
@@ -56,12 +81,8 @@ class LedControlPanel(QtWidgets.QWidget):
         return
 
 def StartApplication():
-    app = QtWidgets.QApplication([])
-
-    widget = LedControlPanel()
-    widget.resize(500, 500)
-    widget.show()
-
+    app = QApplication(sys.argv)
+    ex = App()
     sys.exit(app.exec_())
     return
 
